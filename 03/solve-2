@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+
+from itertools import chain, islice
+import sys
+
+
+def crange(c1, c2):
+    for c in range(ord(c1), ord(c2) + 1):
+        yield chr(c)
+
+
+TYPES = chain(crange('a', 'z'), crange('A', 'Z'))
+PRIORITIES = {t: index for index, t in enumerate(TYPES, start=1)}
+
+
+def batched(iterable, n):
+    it = iter(iterable)
+    while (batch := list(islice(it, n))):
+        yield batch
+
+
+def strip(string):
+    return string.strip()
+
+
+def intersect(first, *rest):
+    return first.intersection(*rest)
+
+
+def priority(item):
+    return PRIORITIES[item]
+
+
+if __name__ == '__main__':
+    shared = (intersect(*map(set, map(strip, lines))) for lines in batched(sys.stdin, 3))
+    print(sum(sum(map(priority, items)) for items in shared))
