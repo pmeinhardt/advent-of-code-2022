@@ -50,11 +50,15 @@ VALUES = {
 }
 
 
-if __name__ == '__main__':
+def score(lines):
     score = 0
 
-    for line in sys.stdin:
+    for line in lines:
         o, y = (VALUES[c] for c in line.split())
         score += (y + 1) + ((y - o + 1) % 3) * 3
 
-    print(score)
+    return score
+
+
+if __name__ == '__main__':
+    print(score(sys.stdin))
