@@ -1,0 +1,61 @@
+#!/usr/bin/env python3
+
+# Score for each round = score for selected shape + score for outcome
+#
+# Score for selected shape:
+#
+#   rock        = 1
+#   paper       = 2
+#   scissors    = 3
+#
+# Score for outcome:
+#
+#   defeat      = 0
+#   draw        = 3
+#   win         = 6
+#
+# Mapping:
+#
+#   0 1 2
+#   -----
+#   A B C : o (opponent)
+#   X Y Z : r (result)
+#
+#     |   | Score for outcome | Score for shape
+#   o | r | r * 3             | ((o + r + 3 - 1) % 3) + 1
+#   --|---|-------------------|----------------------
+#   0 | 0 | 0                 | 3 (defeat against rock, so shape = scissors)
+#   0 | 1 | 3                 | 1 (draw against rock, so shape = rock)
+#   0 | 2 | 6                 | 2 (win against rock, so shape = paper)
+#   1 | 0 | 0                 | 1 (defeat against paper, so shape = rock)
+#   1 | 1 | 3                 | 2 (draw against paper so shape = paper)
+#   … | … | …                 | …
+#
+# Note: (o + r + 3 - 1) % 3 gives
+#
+#   * value of shape to the left of opponent's shape, if r = 0 (lose),
+#     i.e. offset = (o + 0 + 2) % 3 = (o + 2) % 3
+#   * value of opponent's shape, if r = 1 (draw),
+#     i.e. offset = (o + 1 + 2) % 3 = (o + 3) % 3 = o
+#   * value of shape to the right of opponent's shape, if r = 2 (win),
+#     i.e. offset = (o + 2 + 2) % 3 = (o + 1) % 3
+#
+
+import sys
+
+
+VALUES = {
+    "A": 0, "X": 0,
+    "B": 1, "Y": 1,
+    "C": 2, "Z": 2,
+}
+
+
+if __name__ == '__main__':
+    score = 0
+
+    for line in sys.stdin:
+        o, r = (VALUES[c] for c in line.split())
+        score += (r * 3) + ((o + r + 2) % 3) + 1
+
+    print(score)
