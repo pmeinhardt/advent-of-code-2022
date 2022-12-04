@@ -1,0 +1,15 @@
+#!/usr/bin/env ruby
+
+# Make use of Ruby's built-in "Range" class:
+# https://ruby-doc.org/3.1.3/Range.html
+
+count = STDIN.count do |line|
+  r1, r2 = line.split(",")
+    .map { |str| str.split("-").map(&:to_i) }
+    .map { |limits| Range.new(*limits) }
+
+  r1.include?(r2.first) || r1.include?(r2.last) \
+    || r2.include?(r1.first) || r2.include?(r1.last)
+end
+
+puts count
