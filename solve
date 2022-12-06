@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+cd "$(dirname "$0")"
+
+quit () {
+  echo "$1" >&2
+  exit "${2:-0}"
+}
+
+if [ $# -lt 1 ]; then
+  quit "usage: $0 <day> [part]"
+fi
+
+day=$(printf "%02d" "$1")
+part=${2:-1}
+
+script="$day/solve-$part" 
+input="$day/input.txt"
+
+if [ ! -x "$script" ]; then
+  quit "solution not found ($script)" 1
+fi
+
+if [ ! -f "$input" ]; then
+  quit "input not found ($input)" 2
+fi
+
+$script < "$input"
