@@ -21,3 +21,5 @@
 (let [chars (char-seq (java.io.BufferedReader. *in*))]
   (println
     (+ marker-length (find-index uniq? (partition marker-length 1 chars)))))
+
+;; vim: syntax=clojure
