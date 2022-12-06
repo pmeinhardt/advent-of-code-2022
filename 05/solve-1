@@ -1,0 +1,36 @@
+#!/usr/bin/env ruby
+
+SLOT = /(?:\[([A-Z])\]|\s{3})\s/ # crate or empty slot followed by blank space
+MOVE = /\Amove (?<count>\d+) from (?<from>\d+) to (?<to>\d+)\z/
+
+stacks = []
+
+# Read lines for drawing of initial crate arrangement.
+drawing = STDIN.take_while { |line| !line.strip.empty? }
+
+# Build stacks from drawing.
+# - start from the bottom of drawing: reverse
+# - ignore line containing stack numbers: drop(1)
+drawing.reverse.drop(1).map do |line|
+  slots = line.scan(SLOT).flatten
+  slots.each_with_index do |content, index|
+    next if content.nil?
+    stacks[index] ||= []
+    stacks[index] << content
+  end
+end
+
+# Execute rearrangement instructions.
+STDIN.each(chomp: true) do |line|
+  move = MOVE.match(line)
+
+  from = stacks[move[:from].to_i - 1]
+  to = stacks[move[:to].to_i - 1]
+  count = move[:count].to_i
+
+  crates = from.pop(count)
+  to.concat(crates.reverse)
+end
+
+# Output labels of top-most crates.
+puts stacks.map(&:last).join
