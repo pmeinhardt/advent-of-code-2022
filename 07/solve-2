@@ -1,0 +1,21 @@
+#!/usr/bin/env elixir
+
+Code.eval_file("lib.exs", __DIR__)
+
+capacity = 70_000_000
+required = 30_000_000
+
+input = IO.stream(:stdio, :line)
+state = Reader.parse(input)
+stats = Stats.dirstats(state.tree)
+
+unused = capacity - stats["/"]
+missing = max(0, required - unused)
+
+size =
+  stats
+  |> Stream.map(fn {_, size} -> size end)
+  |> Stream.filter(&(&1 >= missing))
+  |> Enum.min()
+
+IO.puts(size)

@@ -1,0 +1,14 @@
+#!/usr/bin/env elixir
+
+Code.eval_file("lib.exs", __DIR__)
+
+input = IO.stream(:stdio, :line)
+state = Reader.parse(input)
+
+total =
+  Stats.dirstats(state.tree)
+  |> Stream.map(fn {_, size} -> size end)
+  |> Stream.filter(&(&1 <= 100_000))
+  |> Enum.sum()
+
+IO.puts(total)
