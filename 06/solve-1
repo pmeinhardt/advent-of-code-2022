@@ -1,25 +1,9 @@
-#!/usr/bin/env clojure
+#!/usr/bin/env bash
 
-(defn byte-seq [^java.io.BufferedReader rdr]
-  (lazy-seq
-    (let [ch (.read rdr)]
-      (if (= ch -1)
-        '()
-        (cons ch (byte-seq rdr))))))
+set -o errexit
+set -o nounset
+set -o pipefail
 
-(defn char-seq [^java.io.BufferedReader rdr]
-  (map char (byte-seq rdr)))
+cd "$(dirname "$0")"
 
-(defn find-index [pred coll]
-  (first (keep-indexed #(when (pred %2) %1) coll)))
-
-(defn uniq? [coll]
-  (= (count coll) (count (set coll))))
-
-(def marker-length 4)
-
-(let [chars (char-seq (java.io.BufferedReader. *in*))]
-  (println
-    (+ marker-length (find-index uniq? (partition marker-length 1 chars)))))
-
-;; vim: syntax=clojure
+exec clojure detect-marker.clj 4
