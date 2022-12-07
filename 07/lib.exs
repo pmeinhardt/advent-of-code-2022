@@ -26,8 +26,7 @@ defmodule FS do
     Map.put(tree, key, value)
   end
 
-  defp insert(%{} = tree, path, key, value) do
-    [name | rest] = path
+  defp insert(%{} = tree, [name | rest], key, value) do
     Map.put(tree, name, insert(tree[name], rest, key, value))
   end
 end
