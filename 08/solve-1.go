@@ -16,9 +16,8 @@ func parse(file *os.File) ([][]uint8, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		cells := strings.Split(line, "")
-		size := len(cells)
 
-		row := make([]uint8, size, size)
+		row := make([]uint8, len(cells))
 
 		for i, char := range cells {
 			value, err := strconv.ParseUint(char, 10, 8)
@@ -41,22 +40,22 @@ func parse(file *os.File) ([][]uint8, error) {
 }
 
 func visibility(grid [][]uint8) [][]uint8 {
-	var vismap [][]uint8
+	var vismap [][]uint8 // 0 = not visible, 1 = visible
 
-	height := len(grid)
-	width := len(grid[0]) // assume at least 1 row and rows of equal width
+	height, width := len(grid), len(grid[0])
 
 	for y := 0; y < height; y++ {
-		vrow := make([]uint8, width, width)
+		vrow := make([]uint8, width)
 		vismap = append(vismap, vrow)
 
-		vrow[0] = 1
-		vrow[width-1] = 1
+		vrow[0], vrow[width-1] = 1, 1 // left and right edge
 
-		if y == 0 || y == height-1 {
-			for x := 1; x < width-1; x++ {
-				vrow[x] = 1
-			}
+		if y > 0 && y < height-1 {
+			continue
+		}
+
+		for x := 1; x < width-1; x++ { // top and bottom edge
+			vrow[x] = 1
 		}
 	}
 
@@ -64,8 +63,7 @@ func visibility(grid [][]uint8) [][]uint8 {
 		row := grid[y]
 		vrow := vismap[y]
 
-		left := row[0]
-		right := row[width-1]
+		left, right := row[0], row[width-1]
 
 		for x, xx := 1, width-2; x < width-1 && xx > 0; x, xx = x+1, xx-1 {
 			if row[x] > left {
@@ -85,8 +83,7 @@ func visibility(grid [][]uint8) [][]uint8 {
 	}
 
 	for x := 1; x < width-1; x++ {
-		top := grid[0][x]
-		bottom := grid[height-1][x]
+		top, bottom := grid[0][x], grid[height-1][x]
 
 		for y, yy := 1, height-2; y < height-1 && yy > 0; y, yy = y+1, yy-1 {
 			if row, vrow := grid[y], vismap[y]; row[x] > top {
@@ -109,7 +106,7 @@ func visibility(grid [][]uint8) [][]uint8 {
 }
 
 func sum(grid [][]uint8) uint {
-	var total uint
+	total := uint(0)
 
 	for _, row := range grid {
 		for _, cell := range row {

@@ -16,9 +16,8 @@ func parse(file *os.File) ([][]uint8, error) {
 	for scanner.Scan() {
 		line := scanner.Text()
 		cells := strings.Split(line, "")
-		size := len(cells)
 
-		row := make([]uint8, size, size)
+		row := make([]uint8, len(cells))
 
 		for i, char := range cells {
 			value, err := strconv.ParseUint(char, 10, 8)
@@ -43,9 +42,7 @@ func parse(file *os.File) ([][]uint8, error) {
 func score(grid [][]uint8, px, py int) uint {
 	top, right, bottom, left := uint(0), uint(0), uint(0), uint(0)
 
-	// TODO: Refactor, copied over from `survey()`
-	height := len(grid)
-	width := len(grid[0]) // assume at least 1 row and rows of equal width
+	height, width := len(grid), len(grid[0])
 
 	value := grid[py][px]
 
@@ -87,12 +84,10 @@ func score(grid [][]uint8, px, py int) uint {
 func survey(grid [][]uint8) [][]uint {
 	var scores [][]uint
 
-	height := len(grid)
-	width := len(grid[0]) // assume at least 1 row and rows of equal width
+	height, width := len(grid), len(grid[0])
 
-	for y := 0; y < height; y++ {
-		srow := make([]uint, width, width)
-		scores = append(scores, srow)
+	for _, row := range grid {
+		scores = append(scores, make([]uint, len(row)))
 	}
 
 	for y := 1; y < height-1; y++ {
@@ -105,7 +100,7 @@ func survey(grid [][]uint8) [][]uint {
 }
 
 func max(grid [][]uint) uint {
-	var result uint
+	result := uint(0) // no negative values allowed
 
 	for _, row := range grid {
 		for _, cell := range row {
