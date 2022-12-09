@@ -1,0 +1,48 @@
+#!/usr/bin/env lua
+
+function cap (value, min, max)
+  return math.max(min, math.min(max, value))
+end
+
+function size (table)
+  local count = 0
+
+  for _ in pairs(table) do
+    count = count + 1
+  end
+
+  return count
+end
+
+local head = {x=0, y=0}
+local tail = {x=0, y=0}
+
+local offsets = {
+  L={x=-1, y=0},
+  R={x=1, y=0},
+  U={x=0, y=1},
+  D={x=0, y=-1}
+}
+
+local visits = {}
+
+for line in io.stdin:lines() do
+  local direction, count = string.match(line, "(%a) (%d+)")
+  count = tonumber(count)
+
+  for i=1,count do
+    local v = offsets[direction]
+    head.x, head.y = head.x + v.x, head.y + v.y
+
+    local dx, dy = head.x - tail.x, head.y - tail.y
+
+    if math.abs(dx) > 1 or math.abs(dy) > 1 then
+      tail.x = tail.x + cap(dx, -1, 1)
+      tail.y = tail.y + cap(dy, -1, 1)
+    end
+
+    visits[tail.x .. "," .. tail.y] = true
+  end
+end
+
+print(size(visits))
