@@ -10,8 +10,8 @@ function cpu:execute (input)
       self:read(instruction)
     end
 
-    self:tick()
     self:exec()
+    self:tick()
 
     return self
   end
@@ -25,9 +25,9 @@ function cpu:read (instruction)
 
   if op == "addx" then
     local value = tonumber(tokens())
-    t, fn = 2, function () self.x = self.x + value end
+    t, fn = 1, function () self.x = self.x + value end
   elseif op == "noop" then
-    t, fn = 1, function () end
+    t, fn = 0, function () end
   else
     error(string.format("error in instruction: %s", instruction))
   end
