@@ -1,0 +1,39 @@
+#!/usr/bin/env lua
+
+dirname = string.match(arg[0], "(.*/)[^/]*")
+local cpu = dofile(string.format("%s/cpu.lua", dirname))
+
+local crt = {width=40, height=6, pos=0, pixels={}}
+local px = {light="#", dark="."}
+
+function crt:update (x)
+  local index = self.pos % self.width
+
+  if x >= index - 1 and x <= index + 1 then
+    self.pixels[self.pos] = px.light
+  else
+    self.pixels[self.pos] = px.dark
+  end
+
+  self.pos = (self.pos + 1) % (self.height * self.width)
+end
+
+function crt:display ()
+  local d = ""
+
+  for i=0,self.height-1 do
+    local index = i * self.width
+    local row = table.concat(self.pixels, "", index, index + self.width - 1)
+    d = d .. row .. "\n"
+  end
+
+  return d
+end
+
+crt:update(cpu.x)
+
+for _ in cpu:execute(io.stdin:lines()) do
+  crt:update(cpu.x)
+end
+
+print(crt:display())
