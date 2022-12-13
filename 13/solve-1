@@ -1,34 +1,11 @@
 #!/usr/bin/env python3
 
+import os.path
 import sys
 
-def lt(a, b):
-    if type(a) == type(b) == int:
-        return a < b
+sys.path.append(os.path.dirname(__file__))
 
-    if type(a) == type(b) == list:
-        for x, y in zip(a, b):
-            if x == y:
-                continue
-            return lt(x, y)
-        return len(a) < len(b)
-
-    if type(a) == list:
-        return lt(a, [b])
-
-    if type(b) == list:
-        return lt([a], b)
-
-    raise "unknown types"
-
-def read(input):
-    while True:
-        try:
-            left, right = map(eval, [next(sys.stdin), next(sys.stdin)])
-            yield left, right
-            next(sys.stdin)
-        except StopIteration:
-            break
+from helpers import lt, read
 
 if __name__ == '__main__':
     results = (lt(left, right) for left, right in read(sys.stdin))

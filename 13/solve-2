@@ -1,0 +1,30 @@
+#!/usr/bin/env python3
+
+import functools
+import itertools
+import os.path
+import sys
+
+sys.path.append(os.path.dirname(__file__))
+
+from helpers import lt, read
+
+def cmp(a, b):
+    if lt(a, b):
+        return -1
+    if lt(b, a):
+        return 1
+    return 0
+
+if __name__ == '__main__':
+    dividers = [[[2]], [[6]]]
+
+    packets = list(itertools.chain(*read(sys.stdin)))
+    packets += dividers
+
+    ordered = sorted(packets, key=functools.cmp_to_key(cmp))
+
+    indices = (i for i, p in enumerate(ordered, start=1) if p in dividers)
+    key = functools.reduce(lambda k, i: k * i, indices)
+
+    print(key)
