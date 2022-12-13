@@ -21,15 +21,15 @@ def lt(a, b):
 
     raise "unknown types"
 
-if __name__ == '__main__':
-    results = []
-
+def read(input):
     while True:
         try:
             left, right = map(eval, [next(sys.stdin), next(sys.stdin)])
-            results.append(lt(left, right))
+            yield left, right
             next(sys.stdin)
-        except Exception as e:
+        except StopIteration:
             break
 
+if __name__ == '__main__':
+    results = (lt(left, right) for left, right in read(sys.stdin))
     print(sum([i for i, x in enumerate(results, start=1) if x]))
