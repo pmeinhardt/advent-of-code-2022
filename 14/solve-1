@@ -1,0 +1,106 @@
+#!/usr/bin/env lua
+
+function pairwise (list)
+  local i = 0
+  return function ()
+    i = i + 1
+    if i < #list then
+      return list[i], list[i + 1]
+    end
+    return nil
+  end
+end
+
+function clamp (n, min, max)
+  return math.max(min, math.min(max, n))
+end
+
+function tokey (x, y)
+  return x .. "," .. y
+end
+
+function render (io, cave, limits, source)
+  for y=0,limits.bottom do
+    for x=limits.left,limits.right do
+      if x == source.x and y == source.y then
+        io:write("+")
+      else
+        io:write(cave[tokey(x, y)] or ".")
+      end
+    end
+    io:write("\n")
+  end
+end
+
+function main ()
+  local source = {x=500, y=0}
+
+  local cave = {}
+  local limits = {left=source.x, right=source.x, bottom=source.y}
+
+  local rock = "#"
+  local sand = "o"
+
+  for line in io.stdin:lines() do
+    local path = {}
+
+    for point in string.gmatch(line, "%d+,%d+") do
+      local x, y = string.match(point, "(%d+),(%d+)")
+      x, y = tonumber(x), tonumber(y)
+      table.insert(path, {x=x, y=y})
+    end
+
+    for a, b in pairwise(path) do
+      local dx, dy = b.x - a.x, b.y - a.y
+      local v = {x=clamp(dx, -1, 1), y=clamp(dy, -1, 1)}
+      local p = {x=a.x, y=a.y}
+
+      while true do
+        cave[tokey(p.x, p.y)] = rock
+
+        limits.left = math.min(limits.left, p.x)
+        limits.right = math.max(limits.right, p.x)
+        limits.bottom = math.max(limits.bottom, p.y)
+
+        if p.x == b.x and p.y == b.y then
+          break
+        end
+
+        p.x, p.y = p.x + v.x, p.y + v.y
+      end
+    end
+  end
+
+  local overflowing = false
+  local count = 0
+
+  while not overflowing do
+    local grain = {x=source.x, y=source.y}
+    while true do
+      if cave[tokey(grain.x, grain.y + 1)] == nil then
+        grain.y = grain.y + 1
+      elseif cave[tokey(grain.x - 1, grain.y + 1)] == nil then
+        grain.x = grain.x - 1
+        grain.y = grain.y + 1
+      elseif cave[tokey(grain.x + 1, grain.y + 1)] == nil then
+        grain.x = grain.x + 1
+        grain.y = grain.y + 1
+      else
+        cave[tokey(grain.x, grain.y)] = sand
+        count = count + 1
+        break
+      end
+
+      if grain.x < limits.left or grain.x > limits.right or grain.y > limits.bottom then
+        overflowing = true
+        break
+      end
+    end
+  end
+
+  render(io.stdout, cave, limits, source)
+
+  print(count)
+end
+
+main()
