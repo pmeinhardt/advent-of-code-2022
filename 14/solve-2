@@ -71,14 +71,17 @@ function main ()
     end
   end
 
-  local overflowing = false
+  local floor = limits.bottom + 2
+
   local count = 0
 
-  while not overflowing do
+  while not blocked do
     local grain = {x=source.x, y=source.y}
 
     while true do
-      if cave[tokey(grain.x, grain.y + 1)] == nil then
+      if grain.y + 1 == floor then
+        break
+      elseif cave[tokey(grain.x, grain.y + 1)] == nil then
         grain.y = grain.y + 1
       elseif cave[tokey(grain.x - 1, grain.y + 1)] == nil then
         grain.x = grain.x - 1
@@ -87,15 +90,15 @@ function main ()
         grain.x = grain.x + 1
         grain.y = grain.y + 1
       else
-        cave[tokey(grain.x, grain.y)] = sand
-        count = count + 1
         break
       end
+    end
 
-      if grain.x < limits.left or grain.x > limits.right or grain.y > limits.bottom then
-        overflowing = true
-        break
-      end
+    cave[tokey(grain.x, grain.y)] = sand
+    count = count + 1
+
+    if grain.x == source.x and grain.y == source.y then
+      break
     end
   end
 
