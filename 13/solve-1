@@ -5,8 +5,8 @@ import sys
 
 sys.path.append(os.path.dirname(__file__))
 
-from helpers import lt, read
+from helpers import cmp, read
 
 if __name__ == '__main__':
-    results = (lt(left, right) for left, right in read(sys.stdin))
-    print(sum([i for i, x in enumerate(results, start=1) if x]))
+    results = (cmp(left, right) for left, right in read(sys.stdin))
+    print(sum([i for i, x in enumerate(results, start=1) if x <= 0]))

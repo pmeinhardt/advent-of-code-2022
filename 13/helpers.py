@@ -1,19 +1,19 @@
-def lt(a, b):
+def cmp(a, b):
     if type(a) == type(b) == int:
-        return a < b
+        return a - b
 
     if type(a) == type(b) == list:
         for x, y in zip(a, b):
-            if x == y:
-                continue
-            return lt(x, y)
-        return len(a) < len(b)
+            rel = cmp(x, y)
+            if rel != 0:
+                return rel
+        return len(a) - len(b)
 
     if type(a) == list:
-        return lt(a, [b])
+        return cmp(a, [b])
 
     if type(b) == list:
-        return lt([a], b)
+        return cmp([a], b)
 
     raise "unknown types"
 

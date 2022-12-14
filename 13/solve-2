@@ -7,14 +7,7 @@ import sys
 
 sys.path.append(os.path.dirname(__file__))
 
-from helpers import lt, read
-
-def cmp(a, b):
-    if lt(a, b):
-        return -1
-    if lt(b, a):
-        return 1
-    return 0
+from helpers import cmp, read
 
 if __name__ == '__main__':
     dividers = [[[2]], [[6]]]
