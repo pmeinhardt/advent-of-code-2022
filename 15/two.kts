@@ -150,7 +150,6 @@ fun pairs(range: IntRange): Sequence<Pair<Int, Int>> {
     }
 }
 
-
 // Main
 
 require(args.size > 0)
