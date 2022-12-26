@@ -26,31 +26,30 @@ function apply(op: Operator, a: Value, b: Value): Value {
 function evaluate(rules: Rules, root: Variable): Stack {
   const stack: Stack = [...rules[root]];
 
-  while (stack.length > 1) {
-    for (let i = stack.length - 1; i >= 0; i--) {
-      const x = stack[i];
+  for (let i = 0; i < stack.length; i++) {
+    const symbol = stack[i];
+    const expr = rules[symbol];
+    if (expr) stack.splice(i, 1, ...expr);
+  }
 
-      if (x in rules) {
-        stack.splice(i, 1, ...rules[x]);
-        break;
-      }
+  for (let i = stack.length - 1; i >= 0; i--) {
+    const x = stack[i];
 
-      if (isval(x)) {
-        continue;
-      }
-
-      const a = stack[i + 1];
-      const b = stack[i + 2];
-
-      if (isop(x) && isval(a) && isval(b)) {
-        stack.splice(i, 3, apply(x, a, b));
-        continue;
-      }
-
-      const state = stack.join(" ");
-      const rls = JSON.stringify(rules, null, 2);
-      throw Error(`Evaluation failed: ${state}\nRules:\n${rls}`);
+    if (isval(x)) {
+      continue;
     }
+
+    const a = stack[i + 1];
+    const b = stack[i + 2];
+
+    if (isop(x) && isval(a) && isval(b)) {
+      stack.splice(i, 3, apply(x, a, b));
+      continue;
+    }
+
+    const state = stack.join(" ");
+    const rls = JSON.stringify(rules, null, 2);
+    throw Error(`Evaluation failed: ${state}\nRules:\n${rls}`);
   }
 
   return stack;
