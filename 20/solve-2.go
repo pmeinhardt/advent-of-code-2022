@@ -24,7 +24,7 @@ func parse(file *os.File) ([]int, error) {
 			return nil, err
 		}
 
-		nums = append(nums, int(num) * key)
+		nums = append(nums, int(num)*key)
 	}
 
 	if err := scanner.Err(); err != nil {
