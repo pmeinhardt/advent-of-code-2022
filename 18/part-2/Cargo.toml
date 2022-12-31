@@ -7,4 +7,3 @@ edition = "2021"
 # https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-pathfinding = "4.2.0"
