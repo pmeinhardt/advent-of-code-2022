@@ -1,0 +1,92 @@
+#!/usr/bin/env ruby
+
+require "set"
+
+ROUNDS = 10
+
+N  = [ 0, -1]
+NE = [ 1, -1]
+E  = [ 1,  0]
+SE = [ 1,  1]
+S  = [ 0,  1]
+SW = [-1,  1]
+W  = [-1,  0]
+NW = [-1, -1]
+
+ANGLES = [N, NE, E, SE, S, SW, W, NW]
+
+CHECKS = {
+  N => [NE, N, NW],
+  S => [SE, S, SW],
+  W => [NW, W, SW],
+  E => [NE, E, SE],
+}
+
+def read(io)
+  positions = Set.new
+
+  STDIN.each(chomp: true).with_index do |line, y|
+    line.chars.each_with_index do |ch, x|
+      positions << [x, y] if ch == "#"
+    end
+  end
+
+  positions
+end
+
+def comps(op, v1, v2)
+  v1.zip(v2).map(&op)
+end
+
+def step(positions, directions)
+  votes = Hash.new { [] }
+
+  positions.each do |pos|
+    occupied = Hash[ANGLES.map { |v| [v, positions.include?(comps(:sum, pos, v))] }]
+
+    unless occupied.value?(true) then
+      votes[pos] <<= pos
+      next
+    end
+
+    voted = false
+
+    directions.each do |dir|
+      angles = CHECKS[dir]
+
+      if angles.none? { |v| occupied[v] } then
+        dest = comps(:sum, pos, dir)
+        votes[dest] <<= pos
+        voted = true
+        break
+      end
+    end
+
+    votes[pos] <<= pos unless voted
+  end
+
+  Set.new(votes.flat_map { |pos, origins| origins.count > 1 ? origins : [pos] })
+end
+
+def bounds(positions)
+  positions.reduce([positions.first] * 2) do |(min, max), pos|
+    [comps(:min, min, pos), comps(:max, max, pos)]
+  end
+end
+
+if __FILE__ == $0
+  positions = read(STDIN)
+  directions = [N, S, W, E]
+
+  ROUNDS.times do
+    positions = step(positions, directions)
+    directions.rotate!
+  end
+
+  min, max = bounds(positions)
+
+  w = max[0] - min[0] + 1
+  h = max[1] - min[1] + 1
+
+  puts (w * h - positions.count)
+end
