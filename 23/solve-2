@@ -1,0 +1,22 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH << File.dirname($0)
+
+load "solve-1"
+
+if __FILE__ == $0
+  positions = read(STDIN)
+  directions = [N, S, W, E]
+
+  round = 1
+
+  loop do
+    updated = step(positions, directions)
+    break if updated == positions
+    positions = updated
+    directions.rotate!
+    round += 1
+  end
+
+  puts round
+end
