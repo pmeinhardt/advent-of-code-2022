@@ -27,7 +27,7 @@ if [ "$flag" = "--test" ] || [ "$flag" = "-t" ]; then
 fi
 
 if [ ! -x "$script" ]; then
-  quit "solution not found ($script)" 1
+  quit "solution not found or not executable ($script)" 1
 fi
 
 if [ ! -f "$input" ]; then
