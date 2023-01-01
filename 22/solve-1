@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+
+import re
+import sys
+
+from enum import Enum, IntEnum, unique
+
+
+@unique
+class Heading(IntEnum):
+    RIGHT = 0
+    DOWN = 1
+    LEFT = 2
+    UP = 3
+
+    def turn(self, steps):
+        cls = self.__class__
+        val = (self.value + steps) % len(cls)
+        return cls(val)
+
+    def lt(self):
+        return self.turn(-1)
+
+    def rt(self):
+        return self.turn(1)
+
+
+@unique
+class Tile(Enum):
+    NONE = " "
+    OPEN = "."
+    WALL = "#"
+
+
+def tosteps(string):
+    matches = re.compile("\d+|[LR]").findall(string)
+    return [m if m in ["L", "R"] else int(m) for m in matches]
+
+
+def read(file):
+    board = []
+
+    for line in file:
+        line = line.rstrip()
+
+        if line == "":
+            break
+
+        tiles =[Tile(ch) for ch in line]
+        board.append(tiles)
+
+    instructions = tosteps(next(file))
+
+    return board, instructions
+
+
+def move(position, heading, distance, board):
+    for _ in range(distance):
+        x, y = position
+
+        if heading == Heading.RIGHT:
+            x += 1
+        elif heading == Heading.LEFT:
+            x -= 1
+        elif heading == Heading.DOWN:
+            y += 1
+        else:
+            y -= 1
+
+        if x < 0 or y < 0:
+            tile = Tile.NONE
+        else:
+            try:
+                tile = board[y][x]
+            except IndexError:
+                tile = Tile.NONE
+
+        if tile == Tile.NONE:
+            if heading == Heading.RIGHT:
+                for i, t in enumerate(board[y]):
+                    if t != Tile.NONE:
+                        x = i
+                        tile = t
+                        break
+            elif heading == Heading.LEFT:
+                for i, t in enumerate(reversed(board[y])):
+                    if t != Tile.NONE:
+                        x = len(board[y]) - 1 - i
+                        tile = t
+                        break
+            elif heading == Heading.DOWN:
+                for i, r in enumerate(board):
+                    if len(r) > x and r[x] != Tile.NONE:
+                        y = i
+                        tile = r[x]
+                        break
+            else:
+                for i, r in enumerate(reversed(board)):
+                    if len(r) > x and r[x] != Tile.NONE:
+                        y = len(board) - 1 - i
+                        tile = r[x]
+                        break
+
+        if tile == Tile.WALL:
+            break
+
+        position = x, y
+
+    return position
+
+
+if __name__ == "__main__":
+    board, steps = read(sys.stdin)
+
+    position = (board[0].index(Tile.OPEN), 0)
+    heading = Heading.RIGHT
+
+    for s in steps:
+        if type(s) == int:
+            position = move(position, heading, s, board)
+        elif s == "R":
+            heading = heading.rt()
+        elif s == "L":
+            heading = heading.lt()
+        else:
+            raise ValueError(f"Invalid step ({s}, {type(s)})")
+
+    x, y = position
+    h  = heading.value
+
+    print(1000 * (y + 1) + 4 * (x + 1) + h)
