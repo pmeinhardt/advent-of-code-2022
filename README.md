@@ -1,17 +1,22 @@
-# Advent of Code 2022
+# Advent of Code 2022 🎄
 
-Solutions to puzzles are organized into directories, one directory for each day: `01`, `02`, `03`, …, `24`, `25`.
+Solutions to puzzles are organized into directories, one directory for each day — `01`, `02`, `03`, …, `24`, `25`:
 
-Implementations for part 1 and 2 of each day are stored as `solve-1` and `solve-2` respectively.
+```
+01:
+  solve-1           # implementation for part 1, expects puzzle input on stdin
+  solve-2           # implementation for part 2, expects puzzle input on stdin
+  test-input.txt    # example input
+  input.txt         # puzzle input (.gitignore-d)
+```
 
 To invoke puzzle implementations from the project root, you can run:
 
-```shell
-./solve <day> [part]
+```text
+./solve <day> [part [--test|-t]]
 ```
 
 For instance, `./solve 5` and `./solve 5 1` will invoke day 5 part 1.
-Running `./solve 5 2` will solve part 2.
+Running `./solve 5 2` will invoke part 2.
 
-Inputs for each day are read from `input.txt`, e.g. `01/input.txt`.
-These input files are `.gitignore`-d.
+Adding `--test` or `-t` after the part number, will use input from `test-input.txt` instead of `input.txt`.

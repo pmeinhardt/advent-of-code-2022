@@ -12,14 +12,19 @@ quit () {
 }
 
 if [ $# -lt 1 ]; then
-  quit "usage: $0 <day> [part]"
+  quit "usage: $0 <day> [part [--test|-t]]"
 fi
 
 day=$(printf "%02d" "$1")
 part=${2:-1}
+flag=${3:-}
 
-script="$day/solve-$part" 
+script="$day/solve-$part"
 input="$day/input.txt"
+
+if [ "$flag" = "--test" ] || [ "$flag" = "-t" ]; then
+  input="$day/test-input.txt"
+fi
 
 if [ ! -x "$script" ]; then
   quit "solution not found ($script)" 1
