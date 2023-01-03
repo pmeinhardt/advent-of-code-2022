@@ -54,6 +54,16 @@ def read(file):
     return board, instructions
 
 
+def peek(board, x, y):
+    if x < 0 or y < 0:
+        return Tile.NONE
+
+    try:
+        return board[y][x]
+    except IndexError:
+        return Tile.NONE
+
+
 def move(position, heading, distance, board):
     for _ in range(distance):
         x, y = position
@@ -67,13 +77,7 @@ def move(position, heading, distance, board):
         else:
             y -= 1
 
-        if x < 0 or y < 0:
-            tile = Tile.NONE
-        else:
-            try:
-                tile = board[y][x]
-            except IndexError:
-                tile = Tile.NONE
+        tile = peek(board, x, y)
 
         if tile == Tile.NONE:
             if heading == Heading.RIGHT:
