@@ -1,0 +1,137 @@
+#!/usr/bin/env ruby
+
+SHAPES = <<-SHAPES.split("\n\n")
+####
+
+.#.
+###
+.#.
+
+..#
+..#
+###
+
+#
+#
+#
+#
+
+##
+##
+SHAPES
+
+ROUNDS = 2022
+
+class Rock
+  SOLID = "#"
+
+  include Enumerable
+
+  attr_reader :height, :width, :rasterized
+
+  def initialize(shape)
+    lines = shape.lines.map(&:chomp)
+
+    @rasterized = lines.reverse.map(&:chars)
+    @width = rasterized.map(&:length).max
+    @height = rasterized.length
+  end
+
+  def solid?(x, y)
+    return false if x < 0 || y < 0
+    @rasterized.at(y)&.at(x) == SOLID
+  end
+
+  def each
+    @rasterized.each_with_index do |row, y|
+      row.each_with_index do |char, x|
+        yield x, y, char == SOLID
+      end
+    end
+  end
+
+  def to_s
+    @rasterized.map(&:join).reverse.join("\n")
+  end
+end
+
+class Simulation
+  def initialize(rocks, jets, width:, offset:)
+    @rocks = rocks.cycle
+    @jets = jets.cycle
+
+    @offset = offset
+    @width = width
+
+    @stack = []
+    @height = 0
+  end
+
+  def height
+    @height
+  end
+
+  def width
+    @width
+  end
+
+  def run
+    rock = @rocks.next
+    x, y = [@offset[0], @offset[1] + @height]
+
+    while true
+      jet = @jets.next
+
+      if jet == ">" then
+        x += 1 if valid?(rock, x + 1, y)
+      elsif jet == "<" then
+        x -= 1 if valid?(rock, x - 1, y)
+      end
+
+      if valid?(rock, x, y - 1) then
+        y -= 1
+      else
+        break
+      end
+    end
+
+    @stack.prepend([rock, [x, y]])
+
+    @height = [@height, y + rock.height].max
+  end
+
+  def valid?(rock, x, y)
+    return false if x < 0 || x + rock.width > @width
+    return false if y < 0
+
+    return true if y >= @height
+
+    return @stack.none? do |(r, (rx, ry))|
+      ry + r.height > y && y + rock.height > ry && r.any? do |xx, yy, solid|
+        solid && rock.solid?(rx - x + xx, ry - y + yy)
+      end
+    end
+  end
+
+  def to_s
+    s = @height.times.collect { "." * @width }
+
+    @stack.each do |(rock, (x, y))|
+      rock.each do |xx, yy, solid|
+        s[-(1 + y + yy)][x + xx] = "#" if solid
+      end
+    end
+
+    s.join("\n")
+  end
+end
+
+if __FILE__ == $0
+  jets = STDIN.read(nil).chomp.chars
+  rocks = SHAPES.map { |shape| Rock.new(shape) }
+
+  sim = Simulation.new(rocks, jets, width: 7, offset: [2, 3])
+  ROUNDS.times { sim.run }
+
+  puts sim.height
+end
