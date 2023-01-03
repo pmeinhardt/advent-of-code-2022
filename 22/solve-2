@@ -1,0 +1,366 @@
+#!/usr/bin/env python3
+
+import math
+import re
+import sys
+
+from enum import Enum, IntEnum, unique
+from itertools import filterfalse, pairwise, product, tee
+
+
+def partition(pred, iterable):
+    iter1, iter2 = tee(iterable)
+    return filter(pred, iter1), filterfalse(pred, iter2)
+
+
+@unique
+class Heading(IntEnum):
+    RIGHT = 0
+    DOWN = 1
+    LEFT = 2
+    UP = 3
+
+    @classmethod
+    def between(cls, start, end):
+        if not isinstance(start, tuple) and isinstance(end, tuple):
+            raise TypeError("start and end must be tuples")
+        if not len(start) == 2 and len(end) == 2:
+            raise ValueError("start and end must have length 2")
+        if not (start[0] == end[0] or start[1] == end[1]):
+            raise ValueError( "start and end must be equal in one component")
+
+        dx = end[0] - start[0]
+        dy = end[1] - start[1]
+
+        if dx > 0:
+            return cls.RIGHT
+        elif dx < 0:
+            return cls.LEFT
+        elif dy > 0:
+            return cls.DOWN
+        elif dy < 0:
+            return cls.UP
+
+        return None
+
+    def turn(self, steps):
+        cls = self.__class__
+        val = (self.value + steps) % len(cls)
+        return cls(val)
+
+    def lt(self, n=1):
+        return self.turn(-n)
+
+    def rt(self, n=1):
+        return self.turn(n)
+
+    def __add__(self, other):
+        if isinstance(other, int):
+            return self.turn(other)
+        return NotImplemented
+
+    def __sub__(self, other):
+        if isinstance(other, self.__class__):
+            return self.value - other.value
+        if isinstance(other, int):
+            return self.turn(-other)
+        return NotImplemented
+
+    def __str__(self):
+        return "→↓←↑"[self.value]
+
+
+@unique
+class Tile(Enum):
+    NONE = " "
+    OPEN = "."
+    WALL = "#"
+
+    def __str__(self):
+        return self.value
+
+
+def tosteps(string):
+    matches = re.compile("\d+|[LR]").findall(string)
+    return [m if m in ["L", "R"] else int(m) for m in matches]
+
+
+def read(file):
+    board = []
+
+    for line in file:
+        line = line.rstrip()
+
+        if line == "":
+            break
+
+        tiles =[Tile(ch) for ch in line]
+        board.append(tiles)
+
+    instructions = tosteps(next(file))
+
+    return board, instructions
+
+
+def peek(board, x, y):
+    if x < 0 or y < 0:
+        return Tile.NONE
+
+    try:
+        return board[y][x]
+    except IndexError:
+        return Tile.NONE
+
+
+def move(position, heading, distance, board, cube, size):
+    for _ in range(distance):
+        x, y = position
+        h = heading
+
+        if heading == Heading.RIGHT:
+            x += 1
+        elif heading == Heading.LEFT:
+            x -= 1
+        elif heading == Heading.DOWN:
+            y += 1
+        else:
+            y -= 1
+
+        tile = peek(board, x, y)
+
+        if tile == Tile.NONE:
+            # We stepped off the board:
+            #
+            # 1. find closest corner points (labels a, b)
+            # 2. find the other edge with matching corner labels
+            # 3. calculate rotation and new heading
+            # 4. calculate point to go to on target edge
+
+            pa = (round(x / size), round(y / size))
+
+            if heading == Heading.RIGHT or heading == Heading.LEFT:
+                pb = (pa[0], pa[1] - 1 if pa[1] * size > y else pa[1] + 1)
+            else:
+                pb = (pa[0] - 1 if pa[0] * size > x else pa[0] + 1, pa[1])
+
+            a, b = cube[pa], cube[pb]
+
+            pas = (p for p, l in cube.items() if l == a)
+            pbs = (p for p, l in cube.items() if l == b)
+
+            for px, py in product(pas, pbs):
+                if px == pa and py == pb:
+                    continue
+                if abs(py[0] - px[0]) + abs(py[1] - px[1]) != 1:
+                    continue
+                pc = px
+                pd = py
+                break
+
+            assert pc and pd
+
+            # Compute distance from point with label a.
+            # It will be used as the distance from c on the target edge.
+
+            anchor = pa if pa < pb else pb
+
+            r = abs(anchor[0] * size - x) if pa[0] != pb[0] else abs(anchor[1] * size - y)
+
+            # Calculate rotation from current edge to target edge.
+
+            h0 = Heading.between(pa, pb)
+            h1 = Heading.between(pc, pd)
+
+            rotation = h1 - h0
+            h = h + rotation
+
+            anchor2 = pc if pc < pd else pd
+
+            if cube[anchor2] != cube[anchor]:
+                r = size - 1 - r
+
+            vcd = (pd[0] - pc[0], pd[1] - pc[1])
+            netshift = [(0, 0), (0, 0), (-1, 0), (0, -1)][h]
+
+            x = anchor2[0] * size + abs(vcd[0]) * r + netshift[0]
+            y = anchor2[1] * size + abs(vcd[1]) * r + netshift[1]
+
+            tile = peek(board, x, y)
+
+        assert tile != Tile.NONE
+
+        if tile == Tile.WALL:
+            break
+
+        position = x, y
+        heading = h
+
+    return position, heading
+
+
+# Label points in the 2d net with 3d coordinates of the cube.
+#
+# Assuming a unit cube (side length 1) for corner point/vertex labeling:
+#
+# - corner point coordinates x, y and z have values of either 0 or 1:
+#   (0, 0, 0), (0, 0, 1), (0, 1, 0), …, (1, 1, 1)
+# - points on both ends of an edge differ in exactly one component, x, y or z
+# - given 3 corner points of a face, we can determin the 4th:
+#   D = A + (B - A) + (C - A) = ((x_A + (x_B + x_A) + (x_C + x_A)) mod 2, …, …)
+#
+# A +---+ B
+#   |   .
+# C +...? D
+#
+# Given 2 points on a hinge (A and B) and an additional point (C), we can
+# determine the coordinates of another (D):
+#
+# - we know A-B and A-C are parallel to 2 different axes, e.g. x and y
+# - because A-B is a hinge, A-D has to be parallel to the remaining axis z
+# - therefore D = (x_A, y_A, 1 - z_A) = (x_A, y_A, (1 + z_A) mod 2)
+#
+#       B
+#   ....+....
+#   .   |   .
+# C +---+---? D
+#       A
+#
+# Using these 2 (sets of) rules, we can label corner points in a cube net
+# with their corresponding 3d coordinates in the cube formed by folding the
+# net. To start, we only need to mark 3 adjacent points of a face with
+# valid coordinates, e.g.:
+#
+# (0, 0, 0) +---+ (1, 0, 0)
+#           |   .
+# (0, 1, 0) +....
+#
+# Instead of using triples for cube coordinates, we use integer values 0
+# through 7 (3 bits) and bitwise operations for addition/subtraction mod 2
+# etc.
+def foldcube(net):
+    labels = {}
+
+    unlabeled = net.copy()
+    labeled = set()
+
+    # Pick any face as a starting point and label its 4 corner points.
+    p0 = next(iter(unlabeled))
+    p1, p2, p3 = (p0[0] + 1, p0[1]), (p0[0] + 1, p0[1] + 1), (p0[0], p0[1] + 1)
+
+    labels[p0] = 0b000 # = 0 ~ (0, 0, 0)
+    labels[p1] = 0b100 # = 4 ~ (1, 0, 0)
+    labels[p2] = 0b110 # = 6 ~ (1, 1, 0)
+    labels[p3] = 0b010 # = 2 ~ (0, 1, 0)
+
+    unlabeled.remove(p0)
+    labeled.add(p0)
+
+    while unlabeled:
+        # Find a face next to a completely labeled face.
+        p0 = next(p for p in unlabeled if any(abs(q[0] - p[0]) + abs(q[1] - p[1]) == 1 for q in labeled))
+
+        # Compute its four corner poins.
+        points = {p0, (p0[0] + 1, p0[1]), (p0[0] + 1, p0[1] + 1), (p0[0], p0[1] + 1)}
+
+        known, missing = map(set, partition(lambda p: p in labels, points))
+
+        assert len(missing) <= 2
+
+        # Determine another corner point of the face through a hinge.
+        if len(missing) > 1:
+            pd = missing.pop()
+
+            a, pa = next((labels[p], p) for p in known if p[0] == pd[0] or p[1] == pd[1]) # hinge point 1 (base)
+            b = next(labels[p] for p in known if p[0] != pd[0] and p[1] != pd[1]) # hinge point 2
+
+            pc = (pa[0] - (pd[0] - pa[0]), pa[1] - (pd[1] - pa[1])) # auxiliary point
+            c = labels[pc]
+
+            # Compute d by inverting the bit in a that is equal in a, b and c.
+            # Because we go around a hinge, we move into the third dimension.
+            d = a ^ (0b111 & ~((a ^ b) | (a ^ c)))
+
+            labels[pd] = d
+            known.add(pd)
+
+        assert len(missing) == 1
+
+        # Determine last missing corner point based on other 3 on the same face.
+        pd = missing.pop()
+
+        a, b, c = (labels[q] for q in known)
+        d = a ^ (b ^ a) ^ (c ^ a)
+
+        labels[pd] = d
+        known.add(pd)
+
+        assert len(missing) == 0
+
+        unlabeled.remove(p0)
+        labeled.add(p0)
+
+    return labels
+
+
+if __name__ == "__main__":
+    board, steps = read(sys.stdin)
+
+    position = (board[0].index(Tile.OPEN), 0)
+    heading = Heading.RIGHT
+
+    # Cube nets are 2x5 or 3x4 in dimensions. Both 2 and 5 as well as 3 and
+    # 4=2*2 are coprime, so the greatest common divisor of the net dimensions
+    # is the cube’s edge length.
+    cubesize = math.gcd(len(board), max(len(row) for row in board))
+
+    assert cubesize > 1
+
+    # Determine the layout of the cube net, one coordinate per tile/face.
+    #
+    # #     #     #     #      #     #    ##
+    # ####  ####  ####  ####  ####  ####   ##   … 11 possible nets in total
+    #    #    #    #    #       #    #      ##
+    #
+    net = set()
+
+    for y in range(5):
+        for x in range(5):
+            tile = peek(board, x * cubesize, y * cubesize)
+
+            if tile != Tile.NONE:
+                net.add((x, y))
+
+    assert len(net) == 6
+
+    # Label face corner points.
+    cube = foldcube(net)
+
+    # Debug-print labeling:
+    # sx, sy = cubesize, cubesize
+    # for y in range(6 * sy):
+    #     for x in range(6 * sx):
+    #         if (x / sx, y / sy) in cube:
+    #             print(cube[(x / sx, y / sy)], end="")
+    #         elif (x // sx, y // sy) in net:
+    #             print(".", end="")
+    #         else:
+    #             print(" ", end="")
+    #     print("")
+
+    # Perform provided steps.
+    for s in steps:
+        if type(s) == int:
+            env = {"board": board, "cube": cube, "size": cubesize}
+            position, heading = move(position, heading, s, **env)
+        elif s == "R":
+            heading = heading.rt()
+        elif s == "L":
+            heading = heading.lt()
+        else:
+            raise ValueError(f"Invalid step ({s}, {type(s)})")
+
+    # Get final position and heading value.
+    x, y = position
+    h  = heading.value
+
+    print(1000 * (y + 1) + 4 * (x + 1) + h)
