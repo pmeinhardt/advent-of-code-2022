@@ -56,6 +56,8 @@ class Rock
 end
 
 class Simulation
+  attr_reader :height, :width
+
   def initialize(rocks, jets, width:, offset:)
     @rocks = rocks.cycle
     @jets = jets.cycle
@@ -65,14 +67,6 @@ class Simulation
 
     @stack = []
     @height = 0
-  end
-
-  def height
-    @height
-  end
-
-  def width
-    @width
   end
 
   def run
