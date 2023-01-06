@@ -20,8 +20,6 @@ SHAPES = <<-SHAPES.split("\n\n")
 ##
 SHAPES
 
-ROUNDS = 2022
-
 class Rock
   SOLID = "#"
 
@@ -118,7 +116,7 @@ if __FILE__ == $0
   rocks = SHAPES.map { |shape| Rock.new(shape) }
 
   sim = Simulation.new(rocks, jets, width: 7, offset: [2, 3])
-  ROUNDS.times { sim.run }
+  2022.times { sim.run }
 
   puts sim.height
 end

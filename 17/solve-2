@@ -1,0 +1,118 @@
+#!/usr/bin/env ruby
+
+$LOAD_PATH << File.dirname($0)
+
+load "solve-1"
+
+class ImpressiveSimulation < Simulation
+  attr_reader :map, :rc, :jc
+
+  def initialize(rocks, jets, width:, offset:)
+    super(rocks, jets, width: width, offset: offset)
+
+    @rc, @jc = nil, nil
+
+    @rocks = Enumerator.new do |y|
+      rocks.each_with_index.cycle do |r, i|
+        @rc = i
+        y << r
+      end
+    end
+
+    @jets = Enumerator.new do |y|
+      jets.each_with_index.cycle do |j, i|
+        @jc = i
+        y << j
+      end
+    end
+  end
+end
+
+if __FILE__ == $0
+  rounds = 1_000_000_000_000
+
+  jets = STDIN.read(nil).chomp.chars
+  rocks = SHAPES.map { |shape| Rock.new(shape) }
+
+  sim = ImpressiveSimulation.new(rocks, jets, width: 7, offset: [2, 3])
+
+  # Observation: The number of rock shapes (r=5) and jets (j=10091 in my input)
+  # are both prime (and coprime). They share no common divisors.
+  #
+  # If there are any cycles during which the tower is growing in exactly the
+  # same shape, then this will be between two occurrences of the same pairing
+  # of the offsets in the rock shapes and jets (rc, jc).
+  #
+  # We store the cycle number and tower height for each of those (rc, jc)
+  # pairings and check whether we see a repeating tower development once we've
+  # seen at least 3 occurrences (between which we can compare the tower shape).
+
+  marks = {}
+
+  period = nil
+  offset = nil
+
+  h_period = nil
+  h_offset = nil
+
+  rounds.times do |n|
+    break unless period.nil? && offset.nil?
+
+    sim.run
+
+    h = sim.height
+
+    r = sim.rc # index of current rock shape
+    j = sim.jc # index of current jet
+
+    key = [r, j]
+
+    marks[key] ||= []
+
+    occurrences = marks[key]
+    occurrences << [n, h]
+
+    # Check whether we have encountered at least 3 such pairings of rc and jc.
+    #
+    # If we did, then we compare the tower between the first and second with
+    # the tower between the second and third. If they are the same, we have
+    # found a cycle.
+    #
+    # If we need further repetitions, we also check whether the tower growth
+    # looks the same between more distant occurrences of (rc, jc).
+    #
+    # Once we find a match, from here on, the tower (and thus its height) will
+    # grow in the same way and we can extrapolate to calculate its final
+    # height.
+
+    next if occurrences.length < 3
+
+    ((occurrences.length - 1) / 2).downto(1) do |step|
+      n0, h0 = occurrences[-1]
+      n1, h1 = occurrences[-(1 + step)]
+      n2, h2 = occurrences[-(1 + step * 2)]
+
+      next unless h0 - h1 == h1 - h2 && n0 - n1 == n1 - n2
+      next unless sim.map[h2..(h1 - 1)] == sim.map[h1..(h0 - 1)]
+
+      offset = n2 + 1     # number of cycles before the first repetition
+      period = n1 - n2    # number of cycles for each repetition
+
+      h_offset = h2       # height of the tower before the first repetition
+      h_period = h1 - h2  # height change for every repetition
+    end
+  end
+
+  h = sim.height
+
+  # Progress the simulation as many times as we would have to for the last,
+  # incomplete repetition (period) before reaching the full number of rounds.
+  rem = (rounds - offset) % period
+  rem.times { sim.run }
+
+  # Measure growth of the tower during the rem-cycles.
+  h_remainder = sim.height - h
+
+  # Output extrapolated final height.
+  puts h_offset + h_period * ((rounds - rem) / period) + h_remainder
+end
