@@ -65,8 +65,8 @@ class Simulation
     @offset = offset
     @width = width
 
-    @stack = []
     @height = 0
+    @map = []
   end
 
   def run
@@ -89,9 +89,12 @@ class Simulation
       end
     end
 
-    @stack.prepend([rock, [x, y]])
+    inc = [0, y + rock.height - @height].max
 
-    @height = [@height, y + rock.height].max
+    inc.times { @map << "." * @width }
+    @height += inc
+
+    rock.each { |xx, yy, solid| @map[y + yy][x + xx] = Rock::SOLID if solid }
   end
 
   def valid?(rock, x, y)
@@ -100,23 +103,13 @@ class Simulation
 
     return true if y >= @height
 
-    return @stack.none? do |(r, (rx, ry))|
-      ry + r.height > y && y + rock.height > ry && r.any? do |xx, yy, solid|
-        solid && rock.solid?(rx - x + xx, ry - y + yy)
-      end
+    return rock.none? do |xx, yy, solid|
+      solid && @map.size > y + yy && @map[y + yy][x + xx] == Rock::SOLID
     end
   end
 
   def to_s
-    s = @height.times.collect { "." * @width }
-
-    @stack.each do |(rock, (x, y))|
-      rock.each do |xx, yy, solid|
-        s[-(1 + y + yy)][x + xx] = "#" if solid
-      end
-    end
-
-    s.join("\n")
+    @map.reverse.join("\n")
   end
 end
 
