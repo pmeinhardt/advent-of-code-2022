@@ -6,6 +6,20 @@ use std::ops::Index;
 
 use pathfinding::prelude::bfs;
 
+// The approach taken here is a 2d shortest path search with a time dimension.
+//
+// When computing the possible successors to a position `(x, y)` at time `t`,
+// we check which neighbors `(x+1, y), …` are actually valid moves by
+// consulting the map state at `t+1`.
+//
+//     /|/|/|/|/|
+//    / / / / / |
+// t0 | | | | | | -> t
+//    | | | | | |
+//    |/|/|/|/|/
+//
+// If the targeted field is empty at `t+1`, it is a valid move.
+
 #[allow(non_camel_case_types)]
 type ts = usize;
 
